@@ -1,38 +1,78 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { users, submissions, type User, type InsertUser, type Submission, type InsertSubmission } from "@shared/schema";
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  // Users
+  getUser(id: string): Promise<User | undefined>; // id is discordId or internal id
+  getUserByDiscordId(discordId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, user: Partial<InsertUser>): Promise<User>;
+
+  // Submissions
+  createSubmission(submission: InsertSubmission): Promise<Submission>;
+  getSubmission(id: string): Promise<Submission | undefined>;
+  getAllSubmissions(): Promise<(Submission & { user: User })[]>;
+  updateSubmissionStatus(id: string, status: "approved" | "denied"): Promise<Submission>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
-  }
-
+export class DatabaseStorage implements IStorage {
+  // Users
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async getUserByDiscordId(discordId: string): Promise<User | undefined> {
+    // In our schema, 'id' IS the discordId (varchar), or we treat it as such.
+    // Let's assume schema 'id' stores the Discord ID for simplicity as defined in schema.ts comment
+    // "id: varchar("id").primaryKey() // We'll use the Discord User ID"
+    return this.getUser(discordId);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
+  }
+
+  async updateUser(id: string, updates: Partial<InsertUser>): Promise<User> {
+    const [user] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
+    return user;
+  }
+
+  // Submissions
+  async createSubmission(insertSubmission: InsertSubmission): Promise<Submission> {
+    const [submission] = await db.insert(submissions).values(insertSubmission).returning();
+    return submission;
+  }
+
+  async getSubmission(id: string): Promise<Submission | undefined> {
+    const [submission] = await db.select().from(submissions).where(eq(submissions.id, id));
+    return submission;
+  }
+
+  async getAllSubmissions(): Promise<(Submission & { user: User })[]> {
+    const rows = await db.select({
+      submission: submissions,
+      user: users,
+    })
+    .from(submissions)
+    .innerJoin(users, eq(submissions.userId, users.id))
+    .orderBy(desc(submissions.createdAt));
+
+    return rows.map(row => ({
+      ...row.submission,
+      user: row.user
+    }));
+  }
+
+  async updateSubmissionStatus(id: string, status: "approved" | "denied"): Promise<Submission> {
+    const [submission] = await db.update(submissions)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(submissions.id, id))
+      .returning();
+    return submission;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
