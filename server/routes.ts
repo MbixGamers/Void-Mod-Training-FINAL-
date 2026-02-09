@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { api, errorSchemas } from "@shared/routes";
 import { setupAuth } from "./auth";
-import { startDiscordBot, sendSubmissionNotification, assignVerifiedRole } from "./discord";
+import { startDiscordBot, sendSubmissionNotification, handleSubmissionResult } from "./discord";
 import passport from "passport";
 import { z } from "zod";
 
@@ -63,12 +63,24 @@ export async function registerRoutes(
     try {
       const input = api.submissions.create.input.parse(req.body);
       
-      // Calculate score and pass/fail (Simple logic for now)
-      // Assuming answers is an object like { q1: "A", q2: "B" }
-      // We'll mock the scoring logic: Score = length of answers (just for demo)
-      // Real app would check against a key.
-      const score = Object.keys(input.answers as object).length * 10; 
-      const passed = score >= 70; // Pass threshold
+      // Calculate score and pass/fail
+      const correctAnswers: Record<string, string> = {
+        // Defining some mock correct answers for the quiz
+        q1: "A", q2: "B", q3: "C", q4: "D", q5: "A", q6: "B", q7: "C", q8: "D", q9: "A", q10: "B"
+      };
+      
+      const submittedAnswers = input.answers as Record<string, string>;
+      const totalQuestions = Object.keys(correctAnswers).length;
+      let correctCount = 0;
+      
+      for (const [key, value] of Object.entries(correctAnswers)) {
+        if (submittedAnswers[key] === value) {
+          correctCount++;
+        }
+      }
+      
+      const score = Math.round((correctCount / totalQuestions) * 100);
+      const passed = score >= 70; // Pass threshold 70%
 
       const submission = await storage.createSubmission({
         ...input,
@@ -116,9 +128,7 @@ export async function registerRoutes(
 
       const submission = await storage.updateSubmissionStatus(submissionId, action === 'approve' ? 'approved' : 'denied');
       
-      if (action === 'approve') {
-          await assignVerifiedRole(submission.userId);
-      }
+      await handleSubmissionResult(submission.userId, action === 'approve' ? 'approve' : 'deny');
 
       res.json(submission);
     } catch (err) {

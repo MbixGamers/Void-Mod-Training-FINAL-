@@ -11,10 +11,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="container flex h-16 items-center justify-between px-4 sm:px-8">
           <Link href="/" className="flex items-center gap-2 font-display text-xl font-bold tracking-tight hover:opacity-80 transition-opacity">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-lg shadow-primary/20">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-rose-600 flex items-center justify-center shadow-lg shadow-primary/20">
               <Gamepad2 className="h-5 w-5 text-white" />
             </div>
-            <span>GameQueue</span>
+            <span>Void Mod Training</span>
           </Link>
 
           <nav className="flex items-center gap-4">
@@ -22,9 +22,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <>
                 {user.isAdmin && (
                   <Link href="/admin">
-                    <Button variant="ghost" size="sm" className="hidden sm:flex gap-2">
+                    <Button variant="default" size="sm" className="hidden sm:flex gap-2 bg-primary hover:bg-primary/90">
                       <LayoutDashboard className="h-4 w-4" />
-                      Admin
+                      Admin Login
                     </Button>
                   </Link>
                 )}
@@ -66,8 +66,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </main>
 
       <footer className="border-t border-border/40 bg-card/30 py-8">
-        <div className="container px-4 text-center text-sm text-muted-foreground">
-          <p>© 2024 GameQueue. Built for gamers.</p>
+        <div className="container px-4 text-center text-sm text-muted-foreground space-y-2">
+          <p>Void Esports Mod Certification System • Made by Nicks Cold</p>
+          <p>©️STE4LTH | 2026 | Void Esports. All rights reserved.</p>
+          <p>Founded by Frank • Ranked 25th in NAC • 13k+ Discord Members</p>
+          <p>Community: <a href="https://discord.gg/dqHF9HPucf" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">discord.gg/dqHF9HPucf</a></p>
+          <p className="pt-4 text-[10px] opacity-50 uppercase tracking-widest">System Architecture: Enhanced Audit Layer Active</p>
         </div>
       </footer>
     </div>

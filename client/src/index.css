@@ -6,35 +6,24 @@
 
 :root {
   /* Discord-inspired Blurple & Dark Theme */
-  --background: 223 30% 12%;       /* Deep dark blue-grey */
-  --foreground: 210 20% 98%;       /* Almost white */
+  --background: 223 30% 8%;       /* Darker background like the reference */
+  --foreground: 210 20% 98%;
   
-  --card: 223 30% 15%;             /* Slightly lighter than background */
+  --card: 223 30% 12%;             /* Card color matches the deep dark blue */
   --card-foreground: 210 20% 98%;
   
-  --popover: 223 30% 12%;
-  --popover-foreground: 210 20% 98%;
-  
-  --primary: 235 86% 65%;          /* Blurple */
+  --primary: 342 90% 48%;          /* Red accent for the Admin Login button */
   --primary-foreground: 0 0% 100%;
   
-  --secondary: 223 25% 20%;        /* Darker secondary elements */
+  --secondary: 223 25% 15%;
   --secondary-foreground: 210 20% 98%;
   
-  --muted: 223 25% 20%;
-  --muted-foreground: 215 15% 65%;
-  
-  --accent: 235 86% 65%;
+  --accent: 235 86% 65%;          /* Keep blurple for other elements */
   --accent-foreground: 0 0% 100%;
   
-  --destructive: 359 85% 60%;      /* Red */
-  --destructive-foreground: 210 20% 98%;
-
-  --success: 142 70% 45%;          /* Green */
-  
-  --border: 223 30% 25%;
-  --input: 223 30% 25%;
-  --ring: 235 86% 65%;
+  --border: 223 30% 15%;
+  --input: 223 30% 15%;
+  --ring: 342 90% 48%;
   
   --radius: 0.75rem;
 

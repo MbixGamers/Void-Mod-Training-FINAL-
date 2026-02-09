@@ -74,26 +74,42 @@ export async function sendSubmissionNotification(submissionId: string, username:
   }
 }
 
-// Assign Role to User
-export async function assignVerifiedRole(userId: string) {
-  if (!isReady || !CONFIG.GUILD_ID || !CONFIG.ROLE_ID) return;
+// Assign Role or Notify Denial to User
+export async function handleSubmissionResult(userId: string, action: 'approve' | 'deny') {
+  if (!isReady || !CONFIG.GUILD_ID) return;
 
   try {
     const guild = await client.guilds.fetch(CONFIG.GUILD_ID);
     const member = await guild.members.fetch(userId);
     
     if (member) {
-      await member.roles.add(CONFIG.ROLE_ID);
-      // Send DM
-      try {
-        await member.send(`Congratulations! Your submission has been approved and you have been given the Verified Staff role.`);
-      } catch (dmError) {
-        console.log("Could not send DM to user (DMs closed?)");
+      if (action === 'approve') {
+        if (CONFIG.ROLE_ID) {
+          await member.roles.add(CONFIG.ROLE_ID);
+        }
+        // Send DM for Approval
+        try {
+          await member.send(`Congratulations! Your submission has been approved and you have been given the Verified Staff role.`);
+        } catch (dmError) {
+          console.log("Could not send DM to user (DMs closed?)");
+        }
+      } else {
+        // Send DM for Denial
+        try {
+          await member.send(`Your submission has been denied.`);
+        } catch (dmError) {
+          console.log("Could not send DM to user (DMs closed?)");
+        }
       }
     }
   } catch (error) {
-    console.error(`Error assigning role to ${userId}:`, error);
+    console.error(`Error handling result for ${userId}:`, error);
   }
+}
+
+// AssignVerifiedRole is kept for backward compatibility if needed, but we prefer handleSubmissionResult
+export async function assignVerifiedRole(userId: string) {
+  return handleSubmissionResult(userId, 'approve');
 }
 
 // Interaction Handler (for Buttons)
@@ -110,9 +126,9 @@ client.on('interactionCreate', async (interaction: Interaction) => {
     const status = action === 'approve' ? 'approved' : 'denied';
     const submission = await storage.updateSubmissionStatus(submissionId, status);
 
-    // If approved, assign role
-    if (status === 'approved' && submission) {
-      await assignVerifiedRole(submission.userId);
+    // If approved, assign role, else notify denial
+    if (submission) {
+      await handleSubmissionResult(submission.userId, action === 'approve' ? 'approve' : 'deny');
     }
 
     // Update the message to remove buttons or show result
