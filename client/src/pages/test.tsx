@@ -108,7 +108,7 @@ export default function TestPage() {
     }, {});
 
     const score = Math.round((correctCount / QUESTIONS.length) * 100);
-    const passed = score >= 80;
+    const passed = score >= 70;
 
     createSubmission.mutate({
       userId: user.id,

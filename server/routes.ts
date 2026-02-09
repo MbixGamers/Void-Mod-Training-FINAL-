@@ -65,16 +65,21 @@ export async function registerRoutes(
       
       // Calculate score and pass/fail
       const correctAnswers: Record<string, string> = {
-        // Defining some mock correct answers for the quiz
-        q1: "A", q2: "B", q3: "C", q4: "D", q5: "A", q6: "B", q7: "C", q8: "D", q9: "A", q10: "B"
+        q1: "Hello, what is your age and how may I assist you today? Please review the requirements and choose a roster.",
+        q2: "Request Fortnite tracker and earnings verification",
+        q3: "Verify Fortnite tracker authenticity and PR.",
+        q4: "Ask for socials and check their content & follower requirements.",
+        q5: "Request portfolio and proof of work & ping @GFX/VFX Lead.",
+        q6: "Ask for 2-3 clips including one freebuild. After sending, ping @Creative Department.",
+        q7: "Ask them to include Void in their username. Use the creator code Team.Void in shop. Verify them."
       };
       
       const submittedAnswers = input.answers as Record<string, string>;
       const totalQuestions = Object.keys(correctAnswers).length;
       let correctCount = 0;
       
-      for (const [key, value] of Object.entries(correctAnswers)) {
-        if (submittedAnswers[key] === value) {
+      for (const [id, correctAnswer] of Object.entries(correctAnswers)) {
+        if (submittedAnswers[id] === correctAnswer) {
           correctCount++;
         }
       }
@@ -127,6 +132,9 @@ export async function registerRoutes(
 
       const submission = await storage.updateSubmissionStatus(submissionId, action === 'approve' ? 'approved' : 'denied');
       
+      // Removed redundant handleSubmissionResult call as it's handled in discord.ts interaction handler or should be handled here ONLY if not from Discord
+      // But we need to ensure it's called once. If it's called here, the Discord button handler also calls it.
+      // Let's keep it only in the route for web-dashboard actions.
       await handleSubmissionResult(submission.userId, action === 'approve' ? 'approve' : 'deny');
 
       res.json(submission);

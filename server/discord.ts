@@ -126,7 +126,8 @@ client.on('interactionCreate', async (interaction: Interaction) => {
     const status = action === 'approve' ? 'approved' : 'denied';
     const submission = await storage.updateSubmissionStatus(submissionId, status);
 
-    // If approved, assign role, else notify denial
+    // handleSubmissionResult is called from the API route for web actions.
+    // For Discord button actions, we call it here.
     if (submission) {
       await handleSubmissionResult(submission.userId, action === 'approve' ? 'approve' : 'deny');
     }
