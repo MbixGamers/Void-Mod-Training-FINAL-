@@ -22,7 +22,7 @@ export default function Home() {
   return (
     <Layout>
       <div className="flex flex-col space-y-12 max-w-6xl mx-auto pb-20">
-        
+
         {/* Header Title Section */}
         <div className="flex items-center gap-4 mb-8">
           <div className="h-10 w-10 bg-accent rounded flex items-center justify-center">
@@ -58,9 +58,22 @@ export default function Home() {
               <UserPlus className="h-6 w-6 text-muted-foreground" />
               <h2 className="text-2xl font-bold font-display">Roster Ticket</h2>
             </div>
-            <p className="text-muted-foreground leading-relaxed">
+            <p className="text-muted-foreground leading-relaxed mb-6">
               Application channel for users seeking to join Void Esports. Initial response must include age verification and direction to appropriate resources. Follow structured onboarding workflow.
             </p>
+
+            {/* Added Note for Underaged Users */}
+            <div className="p-4 bg-destructive/10 border-l-4 border-l-destructive rounded-r">
+              <p className="font-bold text-white mb-2">What do we do for underaged users (under 13 years of age):</p>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li className="flex items-center gap-2">
+                  <span className="text-destructive font-bold">•</span> They are firstly blacklisted in #blacklist channel.
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-destructive font-bold">•</span> We offer them grinder position.
+                </li>
+              </ul>
+            </div>
           </Card>
         </div>
 
