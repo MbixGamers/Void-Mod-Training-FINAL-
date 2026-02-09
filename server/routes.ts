@@ -52,7 +52,7 @@ export async function registerRoutes(
   };
 
   const requireAdmin = (req: any, res: any, next: any) => {
-      if (req.isAuthenticated() && req.user.isAdmin) return next();
+      if (req.isAuthenticated() && (req.user as any).isAdmin) return next();
       // For testing, we might assume the first user is admin or check env var
       // Or if no admins exist, maybe allow? For now strict check.
       res.status(401).json({ message: "Unauthorized Admin" });
@@ -84,14 +84,13 @@ export async function registerRoutes(
 
       const submission = await storage.createSubmission({
         ...input,
-        userId: req.user!.id,
+        userId: (req.user as any).id,
         score,
-        passed,
-        status: 'pending' // Default
+        passed
       });
 
       // Send Discord Webhook/Embed
-      await sendSubmissionNotification(submission.id, req.user!.username, score, passed);
+      await sendSubmissionNotification(submission.id, (req.user as any).username, score, passed);
 
       res.status(201).json(submission);
     } catch (err) {
@@ -114,7 +113,7 @@ export async function registerRoutes(
     const submission = await storage.getSubmission(req.params.id);
     if (!submission) return res.status(404).json({ message: "Not found" });
     // Only allow owner or admin
-    if (submission.userId !== req.user!.id && !req.user!.isAdmin) {
+    if (submission.userId !== (req.user as any).id && !(req.user as any).isAdmin) {
         return res.status(401).json({ message: "Unauthorized" });
     }
     res.json(submission);

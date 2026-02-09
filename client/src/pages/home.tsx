@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Users, UserPlus, Trophy, Gamepad, Monitor, Video, Scissors, PenTool, AlertTriangle, Bed, LogIn, LineChart } from "lucide-react";
+import { Users, UserPlus, Trophy, Gamepad, Monitor, Video, Scissors, PenTool, AlertTriangle, Bed, LogIn, LineChart, ShieldCheck } from "lucide-react";
 import { Layout } from "@/components/layout";
 import { motion } from "framer-motion";
 
