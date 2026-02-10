@@ -14,8 +14,15 @@ const client = new Client({
 const CONFIG = {
   TOKEN: process.env.DISCORD_BOT_TOKEN,
   GUILD_ID: process.env.DISCORD_GUILD_ID,
-  ROLE_ID: process.env.DISCORD_ROLE_ID,
   CHANNEL_ID: process.env.DISCORD_CHANNEL_ID,
+  ROLE_IDS: [
+    process.env.DISCORD_ROLE_ID,
+    process.env.DISCORD_ROLE_ID_1,
+    process.env.DISCORD_ROLE_ID_2,
+    process.env.DISCORD_ROLE_ID_3,
+    process.env.DISCORD_ROLE_ID_4,
+    process.env.DISCORD_ROLE_ID_5
+  ].filter(Boolean) as string[],
 };
 
 let isReady = false;
@@ -37,17 +44,36 @@ export async function startDiscordBot() {
 }
 
 // Send Submission Embed to Channel
-export async function sendSubmissionNotification(submissionId: string, username: string, score: number, passed: boolean) {
+export async function sendSubmissionNotification(submissionId: string, username: string, score: number, passed: boolean, answers: Record<string, string>) {
   if (!isReady || !CONFIG.CHANNEL_ID) return;
 
   try {
     const channel = await client.channels.fetch(CONFIG.CHANNEL_ID) as TextChannel;
     if (!channel) return;
 
+    // Define correct answers for report sheet
+    const correctAnswers: Record<string, string> = {
+      q1: "Hello, what is your age and how may I assist you today? Please review the requirements and choose a roster.",
+      q2: "Request Fortnite tracker and earnings verification",
+      q3: "Verify Fortnite tracker authenticity and PR.",
+      q4: "Ask for socials and check their content & follower requirements.",
+      q5: "Request portfolio and proof of work & ping @GFX/VFX Lead.",
+      q6: "Ask for 2-3 clips including one freebuild. After sending, ping @Creative Department.",
+      q7: "Ask them to include Void in their username. Use the creator code Team.Void in shop. Verify them."
+    };
+
+    let responseSheet = "";
+    for (const [id, correct] of Object.entries(correctAnswers)) {
+      const userAns = answers[id] || "No response";
+      const isCorrect = userAns === correct;
+      responseSheet += `**${id.toUpperCase()}**: ${isCorrect ? "✅" : "❌"}\n*User:* ${userAns.substring(0, 50)}${userAns.length > 50 ? "..." : ""}\n`;
+    }
+
     const embed = new EmbedBuilder()
       .setTitle(`New Test Submission: ${username}`)
+      .setDescription(`**Response Sheet**\n${responseSheet}`)
       .addFields(
-        { name: 'Score', value: `${score}`, inline: true },
+        { name: 'Score', value: `${score}%`, inline: true },
         { name: 'Passed', value: passed ? 'Yes' : 'No', inline: true },
         { name: 'Submission ID', value: submissionId, inline: true }
       )
@@ -84,8 +110,17 @@ export async function handleSubmissionResult(userId: string, action: 'approve' |
     
     if (member) {
       if (action === 'approve') {
-        if (CONFIG.ROLE_ID) {
-          await member.roles.add(CONFIG.ROLE_ID);
+        // Assign all configured roles
+        for (const roleId of CONFIG.ROLE_IDS) {
+          try {
+            await member.roles.add(roleId);
+            // Slight delay to respect rate limits if multiple roles
+            if (CONFIG.ROLE_IDS.length > 1) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+          } catch (roleError) {
+            console.error(`Failed to assign role ${roleId} to ${userId}:`, roleError);
+          }
         }
         // Send DM for Approval
         try {

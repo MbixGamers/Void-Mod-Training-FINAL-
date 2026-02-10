@@ -95,7 +95,7 @@ export async function registerRoutes(
       });
 
       // Send Discord Webhook/Embed
-      await sendSubmissionNotification(submission.id, (req.user as any).username, score, passed);
+      await sendSubmissionNotification(submission.id, (req.user as any).username, score, passed, input.answers as Record<string, string>);
 
       res.status(201).json(submission);
     } catch (err) {
