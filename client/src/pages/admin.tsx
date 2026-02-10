@@ -26,6 +26,13 @@ import {
 import { format } from "date-fns";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -33,6 +40,7 @@ export default function AdminPage() {
   const { data: submissions, isLoading: dataLoading } = useSubmissions();
   const { mutate: performAction, isPending: actionPending } = useAdminAction();
   const [filter, setFilter] = useState("");
+  const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
 
   if (!authLoading && (!user || !user.isAdmin)) {
     setLocation("/");
@@ -104,7 +112,7 @@ export default function AdminPage() {
                       </TableRow>
                     ) : (
                       filteredSubmissions?.map((submission) => (
-                        <TableRow key={submission.id} className="group hover:bg-white/5 transition-colors">
+                        <TableRow key={submission.id} className="group hover:bg-white/5 transition-colors cursor-pointer" onClick={() => setSelectedSubmission(submission)}>
                           <TableCell>
                             <div className="flex items-center gap-3">
                               {submission.user?.avatarUrl ? (
@@ -147,7 +155,10 @@ export default function AdminPage() {
                                   size="sm"
                                   variant="ghost"
                                   className="h-8 w-8 p-0 text-green-500 hover:text-green-400 hover:bg-green-500/10"
-                                  onClick={() => performAction({ id: submission.id, action: "approve" })}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    performAction({ id: submission.id, action: "approve" });
+                                  }}
                                   disabled={actionPending}
                                 >
                                   <Check className="h-4 w-4" />
@@ -157,7 +168,10 @@ export default function AdminPage() {
                                   size="sm"
                                   variant="ghost"
                                   className="h-8 w-8 p-0 text-red-500 hover:text-red-400 hover:bg-red-500/10"
-                                  onClick={() => performAction({ id: submission.id, action: "deny" })}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    performAction({ id: submission.id, action: "deny" });
+                                  }}
                                   disabled={actionPending}
                                 >
                                   <X className="h-4 w-4" />
@@ -178,7 +192,126 @@ export default function AdminPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={!!selectedSubmission} onOpenChange={(open) => !open && setSelectedSubmission(null)}>
+        <DialogContent className="max-w-2xl bg-card border-border shadow-2xl overflow-y-auto max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-display flex items-center gap-3">
+              {selectedSubmission?.user?.username}'s Response Sheet
+              <Badge variant="outline" className={selectedSubmission?.passed ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"}>
+                {selectedSubmission?.score}%
+              </Badge>
+            </DialogTitle>
+            <DialogDescription>
+              Detailed breakdown of the assessment submitted on {selectedSubmission && format(new Date(selectedSubmission.createdAt!), "PP p")}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 pt-4">
+            <ResponseSheet answers={selectedSubmission?.answers} />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-6 border-t border-border/50">
+            {selectedSubmission?.status === 'pending' && (
+              <>
+                <Button 
+                  variant="outline" 
+                  className="text-red-500 border-red-500/20 hover:bg-red-500/10"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    performAction({ id: selectedSubmission.id, action: "deny" });
+                    setSelectedSubmission(null);
+                  }}
+                  disabled={actionPending}
+                >
+                  Deny Application
+                </Button>
+                <Button 
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    performAction({ id: selectedSubmission.id, action: "approve" });
+                    setSelectedSubmission(null);
+                  }}
+                  disabled={actionPending}
+                >
+                  Approve Application
+                </Button>
+              </>
+            )}
+            <Button variant="ghost" onClick={() => setSelectedSubmission(null)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
+  );
+}
+
+function ResponseSheet({ answers }: { answers: any }) {
+  if (!answers) return null;
+
+  const QUESTIONS = [
+    {
+      id: "q1",
+      text: "A user creates a roster ticket with the message: 'I want to join the team, what should I do?'",
+      correct: "Hello, what is your age and how may I assist you today? Please review the requirements and choose a roster."
+    },
+    {
+      id: "q2",
+      text: "A user submits an application for Pro or Semi-Pro roster position.",
+      correct: "Request Fortnite tracker and earnings verification"
+    },
+    {
+      id: "q3",
+      text: "An Academy roster applicant meets PR requirements.",
+      correct: "Verify Fortnite tracker authenticity and PR."
+    },
+    {
+      id: "q4",
+      text: "A user applies for Streamer or Content Creator position.",
+      correct: "Ask for socials and check their content & follower requirements."
+    },
+    {
+      id: "q5",
+      text: "A GFX/VFX applicant submits their portfolio.",
+      correct: "Request portfolio and proof of work & ping @GFX/VFX Lead."
+    },
+    {
+      id: "q6",
+      text: "A Creative roster applicant provides freebuilding clips.",
+      correct: "Ask for 2-3 clips including one freebuild. After sending, ping @Creative Department."
+    },
+    {
+      id: "q7",
+      text: "A Grinder applicant seeks representation.",
+      correct: "Ask them to include Void in their username. Use the creator code Team.Void in shop. Verify them."
+    },
+  ];
+
+  return (
+    <div className="space-y-4">
+      {QUESTIONS.map((q, i) => {
+        const userAns = answers[q.id];
+        const isCorrect = userAns === q.correct;
+        return (
+          <div key={q.id} className={`p-4 rounded-lg border ${isCorrect ? "bg-green-500/5 border-green-500/20" : "bg-red-500/5 border-red-500/20"}`}>
+            <p className="text-sm font-medium mb-2">{i+1}. {q.text}</p>
+            <div className="grid grid-cols-1 gap-2 text-xs">
+              <div className="flex items-start gap-2">
+                <span className="font-bold shrink-0">User:</span>
+                <span className={isCorrect ? "text-green-400" : "text-red-400"}>{userAns || "No answer"}</span>
+              </div>
+              {!isCorrect && (
+                <div className="flex items-start gap-2 text-muted-foreground">
+                  <span className="font-bold shrink-0">Correct:</span>
+                  <span>{q.correct}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
