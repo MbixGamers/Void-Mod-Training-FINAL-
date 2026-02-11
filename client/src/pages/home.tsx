@@ -21,7 +21,7 @@ export default function Home() {
 
   return (
     <Layout>
-      <div className="flex flex-col space-y-12 max-w-6xl mx-auto pb-20">
+      <div className="flex flex-col space-y-12 max-w-6xl mx-auto px-4 pb-20">
 
         {/* Header Title Section */}
         <div className="flex items-center gap-4 mb-8">

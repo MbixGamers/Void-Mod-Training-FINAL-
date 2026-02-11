@@ -95,12 +95,35 @@ export function setupAuth(app: Express) {
     // 2. The Callback route Discord sends users to
     app.get(
       "/auth/discord/callback",
-      passport.authenticate("discord", {
-        failureRedirect: "/login?error=auth_failed",
-      }),
-      (req, res) => {
-        // Successful login - redirect to the test page mentioned in your replit.md
-        res.redirect("/test");
+      (req, res, next) => {
+        passport.authenticate("discord", (err: any, user: any, info: any) => {
+          if (err) return next(err);
+          if (!user) return res.redirect("/login?error=auth_failed");
+
+          // Single session check
+          const store = (req.session as any).store;
+          if (store && store.all) {
+            store.all((err: any, sessions: any) => {
+              if (sessions) {
+                const activeSession = Object.entries(sessions).find(([sid, s]: [string, any]) => 
+                  s.passport?.user === user.id && sid !== req.sessionID
+                );
+                if (activeSession) {
+                  return res.redirect("/login?error=active_session");
+                }
+              }
+              req.logIn(user, (err) => {
+                if (err) return next(err);
+                res.redirect("/test");
+              });
+            });
+          } else {
+            req.logIn(user, (err) => {
+              if (err) return next(err);
+              res.redirect("/test");
+            });
+          }
+        })(req, res, next);
       }
     );
 

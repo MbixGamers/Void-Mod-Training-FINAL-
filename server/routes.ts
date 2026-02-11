@@ -132,10 +132,8 @@ export async function registerRoutes(
 
       const submission = await storage.updateSubmissionStatus(submissionId, action === 'approve' ? 'approved' : 'denied');
       
-      // Removed redundant handleSubmissionResult call as it's handled in discord.ts interaction handler or should be handled here ONLY if not from Discord
-      // But we need to ensure it's called once. If it's called here, the Discord button handler also calls it.
-      // Let's keep it only in the route for web-dashboard actions.
-      await handleSubmissionResult(submission.userId, action === 'approve' ? 'approve' : 'deny');
+      // Pass submission.id as the 3rd argument to sync Discord notification
+      await handleSubmissionResult(submission.userId, action === 'approve' ? 'approve' : 'deny', submission.id);
 
       res.json(submission);
     } catch (err) {

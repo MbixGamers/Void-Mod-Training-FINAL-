@@ -128,7 +128,7 @@ export default function TestPage() {
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto pt-8 px-4 pb-20">
+      <div className="max-w-2xl mx-auto pt-8 px-4 pb-20 w-full overflow-x-hidden">
         <div className="mb-8 space-y-2">
           <div className="flex justify-between text-sm text-muted-foreground font-medium mb-2">
             <span>Question {currentQuestionIndex + 1} of {QUESTIONS.length}</span>

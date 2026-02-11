@@ -80,6 +80,11 @@ export async function sendSubmissionNotification(submissionId: string, username:
       .setColor(passed ? 0x00FF00 : 0xFF0000)
       .setTimestamp();
 
+    const homeBtn = new ButtonBuilder()
+      .setLabel('Website')
+      .setURL('https://927830b1-3484-4513-99a6-b6b8cf295070-00-jjp2jkyawyks.janeway.replit.dev/')
+      .setStyle(ButtonStyle.Link);
+
     const approveBtn = new ButtonBuilder()
       .setCustomId(`approve_${submissionId}`)
       .setLabel('Approve')
@@ -91,7 +96,7 @@ export async function sendSubmissionNotification(submissionId: string, username:
       .setStyle(ButtonStyle.Danger);
 
     const row = new ActionRowBuilder<ButtonBuilder>()
-      .addComponents(approveBtn, denyBtn);
+      .addComponents(approveBtn, denyBtn, homeBtn);
 
     await channel.send({ embeds: [embed], components: [row] });
 
@@ -101,10 +106,36 @@ export async function sendSubmissionNotification(submissionId: string, username:
 }
 
 // Assign Role or Notify Denial to User
-export async function handleSubmissionResult(userId: string, action: 'approve' | 'deny') {
+export async function handleSubmissionResult(userId: string, action: 'approve' | 'deny', submissionId?: string) {
   if (!isReady || !CONFIG.GUILD_ID) return;
 
   try {
+    // If submissionId is provided, find and edit the notification message
+    if (submissionId && CONFIG.CHANNEL_ID) {
+      const channel = await client.channels.fetch(CONFIG.CHANNEL_ID) as TextChannel;
+      if (channel) {
+        const messages = await channel.messages.fetch({ limit: 50 });
+        const notificationMsg = messages.find(m => 
+          m.embeds.length > 0 && 
+          m.embeds[0].fields.some(f => f.name === 'Submission ID' && f.value === submissionId)
+        );
+
+        if (notificationMsg) {
+          const status = action === 'approve' ? 'approved' : 'denied';
+          const originalEmbed = notificationMsg.embeds[0];
+          const newEmbed = EmbedBuilder.from(originalEmbed)
+            .addFields({ name: 'Status', value: `marked as ${status} (via Dashboard)` })
+            .setColor(status === 'approved' ? 0x00FF00 : 0xFF0000);
+
+          // Keep only the "Website" link button if it exists
+          const websiteBtn = (notificationMsg.components[0]?.components as any[]).find(c => (c as any).url?.includes('replit.dev'));
+          const newComponents = websiteBtn ? [new ActionRowBuilder<ButtonBuilder>().addComponents(ButtonBuilder.from(websiteBtn as any))] : [];
+
+          await notificationMsg.edit({ embeds: [newEmbed], components: newComponents });
+        }
+      }
+    }
+
     const guild = await client.guilds.fetch(CONFIG.GUILD_ID);
     const member = await guild.members.fetch(userId);
     
