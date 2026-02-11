@@ -128,7 +128,8 @@ export async function handleSubmissionResult(userId: string, action: 'approve' |
             .setColor(status === 'approved' ? 0x00FF00 : 0xFF0000);
 
           // Keep only the "Website" link button if it exists
-          const websiteBtn = (notificationMsg.components[0]?.components as any[]).find(c => (c as any).url?.includes('replit.dev'));
+          const components = notificationMsg.components[0]?.components as any[];
+          const websiteBtn = components?.find(c => (c as any).url?.includes('replit.dev'));
           const newComponents = websiteBtn ? [new ActionRowBuilder<ButtonBuilder>().addComponents(ButtonBuilder.from(websiteBtn as any))] : [];
 
           await notificationMsg.edit({ embeds: [newEmbed], components: newComponents });

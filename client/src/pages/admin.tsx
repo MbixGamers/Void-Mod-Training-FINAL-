@@ -319,19 +319,19 @@ function StatusBadge({ status }: { status: string }) {
   switch (status) {
     case "approved":
       return (
-        <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/20">
+        <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/20 whitespace-nowrap">
           <CheckCircle2 className="w-3 h-3 mr-1" /> Approved
         </Badge>
       );
     case "denied":
       return (
-        <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20">
+        <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20 whitespace-nowrap">
           <XCircle className="w-3 h-3 mr-1" /> Denied
         </Badge>
       );
     default:
       return (
-        <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/20">
+        <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/20 whitespace-nowrap">
           <Clock className="w-3 h-3 mr-1" /> Pending
         </Badge>
       );
