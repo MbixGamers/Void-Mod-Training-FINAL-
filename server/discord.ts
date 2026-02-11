@@ -80,9 +80,11 @@ export async function sendSubmissionNotification(submissionId: string, username:
       .setColor(passed ? 0x00FF00 : 0xFF0000)
       .setTimestamp();
 
+    const baseUrl = process.env.APP_URL || "https://void-mod-training.replit.app"; // Default or fallback
+
     const homeBtn = new ButtonBuilder()
       .setLabel('Website')
-      .setURL('https://927830b1-3484-4513-99a6-b6b8cf295070-00-jjp2jkyawyks.janeway.replit.dev/')
+      .setURL(baseUrl)
       .setStyle(ButtonStyle.Link);
 
     const approveBtn = new ButtonBuilder()
@@ -129,7 +131,7 @@ export async function handleSubmissionResult(userId: string, action: 'approve' |
 
           // Keep only the "Website" link button if it exists
           const components = notificationMsg.components[0]?.components as any[];
-          const websiteBtn = components?.find(c => (c as any).url?.includes('replit.dev'));
+          const websiteBtn = components?.find(c => (c as any).url && ((c as any).url.includes('replit.dev') || (c as any).url.includes('replit.app')));
           const newComponents = websiteBtn ? [new ActionRowBuilder<ButtonBuilder>().addComponents(ButtonBuilder.from(websiteBtn as any))] : [];
 
           await notificationMsg.edit({ embeds: [newEmbed], components: newComponents });

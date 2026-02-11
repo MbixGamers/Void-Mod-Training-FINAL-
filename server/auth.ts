@@ -19,14 +19,14 @@ export function setupAuth(app: Express) {
   const clientID = process.env.DISCORD_CLIENT_ID;
   const clientSecret = process.env.DISCORD_CLIENT_SECRET;
 
-  // NOTE: This must match the URL you put in the Discord Developer Portal
-  const callbackURL = "https://927830b1-3484-4513-99a6-b6b8cf295070-00-jjp2jkyawyks.janeway.replit.dev/auth/discord/callback";
+  // Determine the base URL dynamically or from environment
+  const getBaseUrl = (req?: any) => {
+    if (process.env.APP_URL) return process.env.APP_URL;
+    if (req) return `${req.protocol}://${req.get('host')}`;
+    return ""; // Fallback
+  };
 
-  if (!clientID || !clientSecret) {
-    console.warn("DISCORD_CLIENT_ID or DISCORD_CLIENT_SECRET not set. Auth will fail.");
-  }
-
-  // Session middleware
+  // Passport Config
   app.use(
     session({
       cookie: { maxAge: 86400000 },
@@ -60,9 +60,10 @@ export function setupAuth(app: Express) {
     passport.use(new DiscordStrategy({
       clientID,
       clientSecret,
-      callbackURL, 
-      scope: scopes
-    }, async (accessToken, refreshToken, profile, done) => {
+      callbackURL: "", // Will be set dynamically in the route
+      scope: scopes,
+      passReqToCallback: true
+    }, async (req: any, accessToken: any, refreshToken: any, profile: any, done: any) => {
       try {
         let user = await storage.getUserByDiscordId(profile.id);
 
@@ -89,14 +90,18 @@ export function setupAuth(app: Express) {
 
     // --- NEW AUTH ROUTES ---
 
-    // 1. Route to trigger login (Link your "Login with Discord" button to this)
-    app.get("/api/auth/discord", passport.authenticate("discord"));
+    // 1. Route to trigger login
+    app.get("/api/auth/discord", (req, res, next) => {
+      const callbackURL = `${getBaseUrl(req)}/auth/discord/callback`;
+      passport.authenticate("discord", { callbackURL } as any)(req, res, next);
+    });
 
     // 2. The Callback route Discord sends users to
     app.get(
       "/auth/discord/callback",
       (req, res, next) => {
-        passport.authenticate("discord", (err: any, user: any, info: any) => {
+        const callbackURL = `${getBaseUrl(req)}/auth/discord/callback`;
+        passport.authenticate("discord", { callbackURL } as any, (err: any, user: any, info: any) => {
           if (err) return next(err);
           if (!user) return res.redirect("/login?error=auth_failed");
 
