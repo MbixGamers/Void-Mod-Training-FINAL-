@@ -92,7 +92,20 @@ export function setupAuth(app: Express) {
 
     // 1. Route to trigger login
     app.get("/api/auth/discord", (req, res, next) => {
-      const callbackURL = `${getBaseUrl(req)}/auth/discord/callback`;
+      // Replit specific: Always use the .replit.app domain for the callback
+      // since .replit.dev is for the internal editor session.
+      const host = req.get('host');
+      let baseUrl = process.env.APP_URL;
+      
+      if (!baseUrl && host) {
+        if (host.includes('.replit.dev')) {
+          baseUrl = `https://${host.replace('.replit.dev', '.replit.app')}`;
+        } else {
+          baseUrl = `${req.protocol}://${host}`;
+        }
+      }
+
+      const callbackURL = `${baseUrl}/auth/discord/callback`;
       passport.authenticate("discord", { callbackURL } as any)(req, res, next);
     });
 
@@ -100,7 +113,19 @@ export function setupAuth(app: Express) {
     app.get(
       "/auth/discord/callback",
       (req, res, next) => {
-        const callbackURL = `${getBaseUrl(req)}/auth/discord/callback`;
+        const host = req.get('host');
+        let baseUrl = process.env.APP_URL;
+        
+        if (!baseUrl && host) {
+          if (host.includes('.replit.dev')) {
+            baseUrl = `https://${host.replace('.replit.dev', '.replit.app')}`;
+          } else {
+            baseUrl = `${req.protocol}://${host}`;
+          }
+        }
+
+        const callbackURL = `${baseUrl}/auth/discord/callback`;
+
         passport.authenticate("discord", { callbackURL } as any, (err: any, user: any, info: any) => {
           if (err) return next(err);
           if (!user) return res.redirect("/login?error=auth_failed");

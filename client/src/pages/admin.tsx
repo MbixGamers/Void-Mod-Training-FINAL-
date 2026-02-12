@@ -41,6 +41,7 @@ export default function AdminPage() {
   const { mutate: performAction, isPending: actionPending } = useAdminAction();
   const [filter, setFilter] = useState("");
   const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
+  const [editedAnswers, setEditedAnswers] = useState<Record<string, string>>({});
 
   if (!authLoading && (!user || !user.isAdmin)) {
     setLocation("/");
@@ -193,7 +194,12 @@ export default function AdminPage() {
         </Card>
       </div>
 
-      <Dialog open={!!selectedSubmission} onOpenChange={(open) => !open && setSelectedSubmission(null)}>
+      <Dialog open={!!selectedSubmission} onOpenChange={(open) => {
+        if (!open) {
+          setSelectedSubmission(null);
+          setEditedAnswers({});
+        }
+      }}>
         <DialogContent className="max-w-2xl bg-card border-border shadow-2xl overflow-y-auto max-h-[80vh]">
           <DialogHeader>
             <DialogTitle className="text-2xl font-display flex items-center gap-3">
@@ -208,7 +214,13 @@ export default function AdminPage() {
           </DialogHeader>
           
           <div className="space-y-6 pt-4">
-            <ResponseSheet answers={selectedSubmission?.answers} />
+            <ResponseSheet 
+              answers={selectedSubmission?.answers} 
+              editedAnswers={editedAnswers}
+              onEdit={(id, val) => setEditedAnswers(prev => ({ ...prev, [id]: val }))}
+              isPending={actionPending}
+              status={selectedSubmission?.status}
+            />
           </div>
 
           <div className="flex justify-end gap-3 pt-6 border-t border-border/50">
@@ -219,7 +231,11 @@ export default function AdminPage() {
                   className="text-red-500 border-red-500/20 hover:bg-red-500/10"
                   onClick={(e) => {
                     e.stopPropagation();
-                    performAction({ id: selectedSubmission.id, action: "deny" });
+                    performAction({ 
+                      id: selectedSubmission.id, 
+                      action: "deny",
+                      answers: Object.keys(editedAnswers).length > 0 ? { ...selectedSubmission.answers, ...editedAnswers } : undefined
+                    });
                     setSelectedSubmission(null);
                   }}
                   disabled={actionPending}
@@ -230,7 +246,11 @@ export default function AdminPage() {
                   className="bg-green-600 hover:bg-green-700 text-white"
                   onClick={(e) => {
                     e.stopPropagation();
-                    performAction({ id: selectedSubmission.id, action: "approve" });
+                    performAction({ 
+                      id: selectedSubmission.id, 
+                      action: "approve",
+                      answers: Object.keys(editedAnswers).length > 0 ? { ...selectedSubmission.answers, ...editedAnswers } : undefined
+                    });
                     setSelectedSubmission(null);
                   }}
                   disabled={actionPending}
@@ -247,64 +267,92 @@ export default function AdminPage() {
   );
 }
 
-function ResponseSheet({ answers }: { answers: any }) {
+function ResponseSheet({ answers, editedAnswers, onEdit, isPending, status }: { 
+  answers: any, 
+  editedAnswers: Record<string, string>,
+  onEdit: (id: string, val: string) => void,
+  isPending: boolean,
+  status: string
+}) {
   if (!answers) return null;
 
   const QUESTIONS = [
     {
       id: "q1",
       text: "A user creates a roster ticket with the message: 'I want to join the team, what should I do?'",
-      correct: "Hello, what is your age and how may I assist you today? Please review the requirements and choose a roster."
+      correct: "Hello, what is your age and how may I assist you today? Please review the requirements and choose a roster.",
+      options: ["Hello, what is your age and how may I assist you today? Please review the requirements and choose a roster.", "Sup how did you find us?", "Hey, someone else would be helping you.", "I accepted your ticket, what do you need help with?"]
     },
     {
       id: "q2",
       text: "A user submits an application for Pro or Semi-Pro roster position.",
-      correct: "Request Fortnite tracker and earnings verification"
+      correct: "Request Fortnite tracker and earnings verification",
+      options: ["Ping a fellow trial moderator.", "Give them the role they asked for.", "Request Fortnite tracker and earnings verification", "Choose to ignore and close their ticket."]
     },
     {
       id: "q3",
       text: "An Academy roster applicant meets PR requirements.",
-      correct: "Verify Fortnite tracker authenticity and PR."
+      correct: "Verify Fortnite tracker authenticity and PR.",
+      options: ["Give them the role without verification.", "Verify Fortnite tracker authenticity and PR.", "Choose to ignore", "Ping high authority moderators."]
     },
     {
       id: "q4",
       text: "A user applies for Streamer or Content Creator position.",
-      correct: "Ask for socials and check their content & follower requirements."
+      correct: "Ask for socials and check their content & follower requirements.",
+      options: ["Ask their PR and tracker link.", "Choose to ignore / Close their ticket.", "Ping @Creative Department.", "Ask for socials and check their content & follower requirements."]
     },
     {
       id: "q5",
       text: "A GFX/VFX applicant submits their portfolio.",
-      correct: "Request portfolio and proof of work & ping @GFX/VFX Lead."
+      correct: "Request portfolio and proof of work & ping @GFX/VFX Lead.",
+      options: ["Give them role directly.", "Request portfolio and proof of work & ping @GFX/VFX Lead.", "Ignore their request.", "Ping @Content Department."]
     },
     {
       id: "q6",
       text: "A Creative roster applicant provides freebuilding clips.",
-      correct: "Ask for 2-3 clips including one freebuild. After sending, ping @Creative Department."
+      correct: "Ask for 2-3 clips including one freebuild. After sending, ping @Creative Department.",
+      options: ["Ping @Content Department", "Request portfolio and give them roles directly.", "Ignore their request.", "Ask for 2-3 clips including one freebuild. After sending, ping @Creative Department."]
     },
     {
       id: "q7",
       text: "A Grinder applicant seeks representation.",
-      correct: "Ask them to include Void in their username. Use the creator code Team.Void in shop. Verify them."
+      correct: "Ask them to include Void in their username. Use the creator code Team.Void in shop. Verify them.",
+      options: ["Ask them to include Void in their username. Use the creator code Team.Void in shop. Verify them.", "Give a 12 year old grinder directly.", "Ignore their request.", "Ping higher authority moderators."]
     },
   ];
 
   return (
     <div className="space-y-4">
       {QUESTIONS.map((q, i) => {
-        const userAns = answers[q.id];
-        const isCorrect = userAns === q.correct;
+        const currentAns = editedAnswers[q.id] || answers[q.id];
+        const isCorrect = currentAns === q.correct;
+        const isPendingStatus = status === 'pending';
+
         return (
           <div key={q.id} className={`p-4 rounded-lg border ${isCorrect ? "bg-green-500/5 border-green-500/20" : "bg-red-500/5 border-red-500/20"}`}>
             <p className="text-sm font-medium mb-2">{i+1}. {q.text}</p>
-            <div className="grid grid-cols-1 gap-2 text-xs">
-              <div className="flex items-start gap-2">
-                <span className="font-bold shrink-0">User:</span>
-                <span className={isCorrect ? "text-green-400" : "text-red-400"}>{userAns || "No answer"}</span>
+            <div className="space-y-3">
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">User Answer</span>
+                {isPendingStatus ? (
+                  <select 
+                    value={currentAns}
+                    onChange={(e) => onEdit(q.id, e.target.value)}
+                    disabled={isPending}
+                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
+                  >
+                    {q.options.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className={`text-sm ${isCorrect ? "text-green-400" : "text-red-400"}`}>{currentAns || "No answer"}</span>
+                )}
               </div>
               {!isCorrect && (
-                <div className="flex items-start gap-2 text-muted-foreground">
-                  <span className="font-bold shrink-0">Correct:</span>
-                  <span>{q.correct}</span>
+                <div className="flex flex-col gap-1 border-t border-border/20 pt-2">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Correct Answer</span>
+                  <span className="text-sm text-muted-foreground italic">{q.correct}</span>
                 </div>
               )}
             </div>

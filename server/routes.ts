@@ -6,6 +6,9 @@ import { setupAuth } from "./auth";
 import { startDiscordBot, sendSubmissionNotification, handleSubmissionResult } from "./discord";
 import passport from "passport";
 import { z } from "zod";
+import { db } from "./db";
+import { submissions } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -127,8 +130,18 @@ export async function registerRoutes(
   // Admin Actions
   app.post(api.admin.action.path, requireAdmin, async (req, res) => {
     try {
-      const { action } = api.admin.action.input.parse(req.body);
+      const { action, answers } = z.object({
+        action: z.enum(["approve", "deny"]),
+        answers: z.record(z.string()).optional()
+      }).parse(req.body);
       const submissionId = req.params.id;
+
+      // Update answers if provided
+      if (answers) {
+        await db.update(submissions)
+          .set({ answers, updatedAt: new Date() })
+          .where(eq(submissions.id, submissionId));
+      }
 
       const submission = await storage.updateSubmissionStatus(submissionId, action === 'approve' ? 'approved' : 'denied');
       
