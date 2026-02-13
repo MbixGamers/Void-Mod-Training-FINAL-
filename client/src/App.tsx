@@ -12,6 +12,7 @@ import NotFound from "@/pages/not-found";
 
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { ThemeProvider } from "@/components/theme-provider";
 
 function Router() {
   const { toast } = useToast();
@@ -47,15 +48,15 @@ function Router() {
   );
 }
 
-function App() {
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Router />
-        <Toaster />
-      </TooltipProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <Router />
+          <Toaster />
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
-
-export default App;

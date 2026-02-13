@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, TextChannel, Interaction } from 'discord.js';
+import { Client, GatewayIntentBits, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, TextChannel, Interaction, GuildMember } from 'discord.js';
 import { storage } from './storage';
 
 // Initialize Discord Client
@@ -101,6 +101,41 @@ export async function sendSubmissionNotification(submissionId: string, username:
       .addComponents(approveBtn, denyBtn, homeBtn);
 
     await channel.send({ embeds: [embed], components: [row] });
+
+    // DM notification to admins
+    try {
+      const guild = await client.guilds.fetch(CONFIG.GUILD_ID);
+      const members = await guild.members.fetch();
+      const admins = members.filter(m => m.permissions.has('Administrator') && !m.user.bot);
+      
+      const dmEmbed = new EmbedBuilder()
+        .setTitle(`🔔 New Training Submission`)
+        .setDescription(`A new training submission has been received from **${username}**.`)
+        .addFields(
+          { name: 'Score', value: `${score}%`, inline: true },
+          { name: 'Passed', value: passed ? 'Yes' : 'No', inline: true }
+        )
+        .setColor(0x0099ff)
+        .setTimestamp();
+
+      const dmRow = new ActionRowBuilder<ButtonBuilder>()
+        .addComponents(
+          new ButtonBuilder()
+            .setLabel('Review Dashboard')
+            .setURL(`${baseUrl}/admin`)
+            .setStyle(ButtonStyle.Link)
+        );
+
+      for (const [_, admin] of admins) {
+        try {
+          await admin.send({ embeds: [dmEmbed], components: [dmRow] });
+        } catch (err) {
+          console.log(`Could not send DM to admin ${(admin as GuildMember).user.tag}`);
+        }
+      }
+    } catch (err) {
+      console.error("Error sending admin DM notifications:", err);
+    }
 
   } catch (error) {
     console.error("Error sending submission notification:", error);
