@@ -1,16 +1,14 @@
 import { Client, GatewayIntentBits, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, TextChannel, Interaction, GuildMember } from 'discord.js';
 import { storage } from './storage';
 
-// Initialize Discord Client
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers, // Needed to assign roles
+    GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
   ]
 });
 
-// Configuration (from env)
 const CONFIG = {
   TOKEN: process.env.DISCORD_BOT_TOKEN,
   GUILD_ID: process.env.DISCORD_GUILD_ID,
@@ -27,13 +25,11 @@ const CONFIG = {
 
 let isReady = false;
 
-// Start Bot
 export async function startDiscordBot() {
   if (!CONFIG.TOKEN) {
     console.warn("DISCORD_BOT_TOKEN not set. Bot features will be disabled.");
     return;
   }
-
   try {
     await client.login(CONFIG.TOKEN);
     console.log(`Discord Bot logged in as ${client.user?.tag}`);
@@ -43,7 +39,6 @@ export async function startDiscordBot() {
   }
 }
 
-// Send Submission Embed to Channel
 export async function sendSubmissionNotification(submissionId: string, username: string, score: number, passed: boolean, answers: Record<string, string>) {
   if (!isReady || !CONFIG.CHANNEL_ID) return;
 
@@ -51,7 +46,6 @@ export async function sendSubmissionNotification(submissionId: string, username:
     const channel = await client.channels.fetch(CONFIG.CHANNEL_ID) as TextChannel;
     if (!channel) return;
 
-    // Define correct answers for report sheet
     const correctAnswers: Record<string, string> = {
       q1: "Hello, what is your age and how may I assist you today? Please review the requirements and choose a roster.",
       q2: "Request Fortnite tracker and earnings verification",
@@ -69,6 +63,8 @@ export async function sendSubmissionNotification(submissionId: string, username:
       responseSheet += `**${id.toUpperCase()}**: ${isCorrect ? "✅" : "❌"}\n*User:* ${userAns.substring(0, 50)}${userAns.length > 50 ? "..." : ""}\n`;
     }
 
+    const baseUrl = process.env.APP_URL || "https://void-mod-training.replit.app";
+
     const embed = new EmbedBuilder()
       .setTitle(`New Test Submission: ${username}`)
       .setDescription(`**Response Sheet**\n${responseSheet}`)
@@ -80,95 +76,50 @@ export async function sendSubmissionNotification(submissionId: string, username:
       .setColor(passed ? 0x00FF00 : 0xFF0000)
       .setTimestamp();
 
-    const baseUrl = process.env.APP_URL || "https://void-mod-training.replit.app"; // Default or fallback
-
-    const homeBtn = new ButtonBuilder()
-      .setLabel('Website')
-      .setURL(baseUrl)
-      .setStyle(ButtonStyle.Link);
-
-    const approveBtn = new ButtonBuilder()
-      .setCustomId(`approve_${submissionId}`)
-      .setLabel('Approve')
-      .setStyle(ButtonStyle.Success);
-
-    const denyBtn = new ButtonBuilder()
-      .setCustomId(`deny_${submissionId}`)
-      .setLabel('Deny')
-      .setStyle(ButtonStyle.Danger);
-
-    const row = new ActionRowBuilder<ButtonBuilder>()
-      .addComponents(approveBtn, denyBtn, homeBtn);
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder().setCustomId(`approve_${submissionId}`).setLabel('Approve').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId(`deny_${submissionId}`).setLabel('Deny').setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setLabel('Website').setURL(baseUrl).setStyle(ButtonStyle.Link)
+    );
 
     await channel.send({ embeds: [embed], components: [row] });
 
-    // DM notification to admins
+    // --- LOGIC FIX: CHECK DATABASE FOR ADMINS ---
     try {
-      const guildId = CONFIG.GUILD_ID;
-      if (guildId) {
-        const guild = await client.guilds.fetch(guildId);
-        const members = await guild.members.fetch();
-        const admins = members.filter(m => m.permissions.has('Administrator') && !m.user.bot);
-        
+      const dbAdmins = await storage.getAdmins();
+
+      if (dbAdmins.length > 0) {
         const dmEmbed = new EmbedBuilder()
           .setTitle(`🔔 New Training Submission`)
-          .setDescription(`A new training submission has been received from **${username}**.\n\n**Submission Details:**\n• User: ${username}\n• Score: ${score}%\n• Status: ${passed ? "✅ Passed" : "❌ Failed"}`)
+          .setDescription(`A new training submission has been received from **${username}**.`)
+          .addFields(
+            { name: 'Score', value: `${score}%`, inline: true },
+            { name: 'Passed', value: passed ? 'Yes' : 'No', inline: true }
+          )
           .setColor(0x0099ff)
           .setTimestamp();
 
-        const dmRow = new ActionRowBuilder<ButtonBuilder>()
-          .addComponents(
-            new ButtonBuilder()
-              .setLabel('Review Dashboard')
-              .setURL(`${baseUrl}/admin`)
-              .setStyle(ButtonStyle.Link)
-          );
-
-        for (const admin of admins.values()) {
-          try {
-            await admin.send({ embeds: [dmEmbed], components: [dmRow] });
-          } catch (err) {
-            console.log(`Could not send DM to admin ${admin.user.tag}`);
-          }
-        }
-      }
-    } catch (err) {
-      console.error("Error sending admin DM notifications:", err);
-    }
-
-    // DM notification to admins
-    try {
-      const guild = await client.guilds.fetch(CONFIG.GUILD_ID);
-      const members = await guild.members.fetch();
-      const admins = members.filter(m => m.permissions.has('Administrator') && !m.user.bot);
-      
-      const dmEmbed = new EmbedBuilder()
-        .setTitle(`🔔 New Training Submission`)
-        .setDescription(`A new training submission has been received from **${username}**.`)
-        .addFields(
-          { name: 'Score', value: `${score}%`, inline: true },
-          { name: 'Passed', value: passed ? 'Yes' : 'No', inline: true }
-        )
-        .setColor(0x0099ff)
-        .setTimestamp();
-
-      const dmRow = new ActionRowBuilder<ButtonBuilder>()
-        .addComponents(
+        const dmRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
           new ButtonBuilder()
             .setLabel('Review Dashboard')
             .setURL(`${baseUrl}/admin`)
             .setStyle(ButtonStyle.Link)
         );
 
-      for (const [_, admin] of admins) {
-        try {
-          await admin.send({ embeds: [dmEmbed], components: [dmRow] });
-        } catch (err) {
-          console.log(`Could not send DM to admin ${(admin as GuildMember).user.tag}`);
+        for (const adminRecord of dbAdmins) {
+          try {
+            // adminRecord.id is the Discord ID stored in your DB
+            const user = await client.users.fetch(adminRecord.id);
+            if (user && !user.bot) {
+              await user.send({ embeds: [dmEmbed], components: [dmRow] });
+            }
+          } catch (err) {
+            console.log(`Could not send DM to DB Admin: ${adminRecord.username}`);
+          }
         }
       }
     } catch (err) {
-      console.error("Error sending admin DM notifications:", err);
+      console.error("Error in admin DM process:", err);
     }
 
   } catch (error) {
@@ -176,12 +127,10 @@ export async function sendSubmissionNotification(submissionId: string, username:
   }
 }
 
-// Assign Role or Notify Denial to User
 export async function handleSubmissionResult(userId: string, action: 'approve' | 'deny', submissionId?: string) {
   if (!isReady || !CONFIG.GUILD_ID) return;
 
   try {
-    // If submissionId is provided, find and edit the notification message
     if (submissionId && CONFIG.CHANNEL_ID) {
       const channel = await client.channels.fetch(CONFIG.CHANNEL_ID) as TextChannel;
       if (channel) {
@@ -198,10 +147,9 @@ export async function handleSubmissionResult(userId: string, action: 'approve' |
             .addFields({ name: 'Status', value: `marked as ${status} (via Dashboard)` })
             .setColor(status === 'approved' ? 0x00FF00 : 0xFF0000);
 
-          // Keep only the "Website" link button if it exists
           const firstRow = notificationMsg.components[0] as any;
           const components = firstRow?.components || [];
-          const websiteBtn = components.find((c: any) => c.url && (c.url.includes('replit.dev') || c.url.includes('replit.app')));
+          const websiteBtn = components.find((c: any) => c.url && c.url.includes('replit'));
           const newComponents = websiteBtn ? [new ActionRowBuilder<ButtonBuilder>().addComponents(ButtonBuilder.from(websiteBtn as any))] : [];
 
           await notificationMsg.edit({ embeds: [newEmbed], components: newComponents });
@@ -211,79 +159,46 @@ export async function handleSubmissionResult(userId: string, action: 'approve' |
 
     const guild = await client.guilds.fetch(CONFIG.GUILD_ID);
     const member = await guild.members.fetch(userId);
-    
+
     if (member) {
       if (action === 'approve') {
-        // Assign all configured roles
         for (const roleId of CONFIG.ROLE_IDS) {
           try {
             await member.roles.add(roleId);
-            // Slight delay to respect rate limits if multiple roles
-            if (CONFIG.ROLE_IDS.length > 1) {
-              await new Promise(resolve => setTimeout(resolve, 500));
-            }
-          } catch (roleError) {
-            console.error(`Failed to assign role ${roleId} to ${userId}:`, roleError);
-          }
+            if (CONFIG.ROLE_IDS.length > 1) await new Promise(r => setTimeout(r, 500));
+          } catch (e) { console.error(`Role Error: ${roleId}`, e); }
         }
-        // Send DM for Approval
-        try {
-          await member.send(`Congratulations! Your submission has been approved and you have been given the Verified Staff role.`);
-        } catch (dmError) {
-          console.log("Could not send DM to user (DMs closed?)");
-        }
+        try { await member.send(`Congratulations! Your submission was approved.`); } catch (e) {}
       } else {
-        // Send DM for Denial
-        try {
-          await member.send(`Your submission has been denied.`);
-        } catch (dmError) {
-          console.log("Could not send DM to user (DMs closed?)");
-        }
+        try { await member.send(`Your submission has been denied.`); } catch (e) {}
       }
     }
   } catch (error) {
-    console.error(`Error handling result for ${userId}:`, error);
+    console.error(`Error handling result:`, error);
   }
 }
 
-// AssignVerifiedRole is kept for backward compatibility if needed, but we prefer handleSubmissionResult
-export async function assignVerifiedRole(userId: string) {
-  return handleSubmissionResult(userId, 'approve');
-}
-
-// Interaction Handler (for Buttons)
 client.on('interactionCreate', async (interaction: Interaction) => {
   if (!interaction.isButton()) return;
-
   const [action, submissionId] = interaction.customId.split('_');
   if (!['approve', 'deny'].includes(action)) return;
 
   try {
     await interaction.deferReply({ ephemeral: true });
-
-    // Update DB
     const status = action === 'approve' ? 'approved' : 'denied';
     const submission = await storage.updateSubmissionStatus(submissionId, status);
 
-    // handleSubmissionResult is called from the API route for web actions.
-    // For Discord button actions, we call it here.
     if (submission) {
       await handleSubmissionResult(submission.userId, action === 'approve' ? 'approve' : 'deny');
     }
 
-    // Update the message to remove buttons or show result
-    const originalEmbed = interaction.message.embeds[0];
-    const newEmbed = EmbedBuilder.from(originalEmbed)
+    const newEmbed = EmbedBuilder.from(interaction.message.embeds[0])
       .addFields({ name: 'Status', value: `marked as ${status} by <@${interaction.user.id}>` })
       .setColor(status === 'approved' ? 0x00FF00 : 0xFF0000);
 
     await interaction.message.edit({ embeds: [newEmbed], components: [] });
     await interaction.editReply(`Submission ${status} successfully.`);
-
   } catch (error) {
-    console.error("Error handling interaction:", error);
-    if (interaction.isRepliable()) {
-      await interaction.editReply("An error occurred processing this action.");
-    }
+    console.error("Interaction Error:", error);
   }
 });

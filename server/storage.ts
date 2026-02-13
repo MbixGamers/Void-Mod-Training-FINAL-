@@ -4,10 +4,11 @@ import { eq, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Users
-  getUser(id: string): Promise<User | undefined>; // id is discordId or internal id
+  getUser(id: string): Promise<User | undefined>;
   getUserByDiscordId(discordId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, user: Partial<InsertUser>): Promise<User>;
+  getAdmins(): Promise<User[]>; // New method
 
   // Submissions
   createSubmission(submission: InsertSubmission): Promise<Submission>;
@@ -24,9 +25,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByDiscordId(discordId: string): Promise<User | undefined> {
-    // In our schema, 'id' IS the discordId (varchar), or we treat it as such.
-    // Let's assume schema 'id' stores the Discord ID for simplicity as defined in schema.ts comment
-    // "id: varchar("id").primaryKey() // We'll use the Discord User ID"
     return this.getUser(discordId);
   }
 
@@ -40,15 +38,18 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getAdmins(): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.isAdmin, true));
+  }
+
   // Submissions
   async createSubmission(insertSubmission: InsertSubmission): Promise<Submission> {
     const [submission] = await db.insert(submissions).values(insertSubmission).returning();
-    
-    // Increment user submission count
+
     await db.update(users)
       .set({ submissionCount: sql`${users.submissionCount} + 1` })
       .where(eq(users.id, insertSubmission.userId));
-      
+
     return submission;
   }
 
