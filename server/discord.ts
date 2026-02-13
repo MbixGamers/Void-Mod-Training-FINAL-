@@ -104,6 +104,40 @@ export async function sendSubmissionNotification(submissionId: string, username:
 
     // DM notification to admins
     try {
+      const guildId = CONFIG.GUILD_ID;
+      if (guildId) {
+        const guild = await client.guilds.fetch(guildId);
+        const members = await guild.members.fetch();
+        const admins = members.filter(m => m.permissions.has('Administrator') && !m.user.bot);
+        
+        const dmEmbed = new EmbedBuilder()
+          .setTitle(`🔔 New Training Submission`)
+          .setDescription(`A new training submission has been received from **${username}**.\n\n**Submission Details:**\n• User: ${username}\n• Score: ${score}%\n• Status: ${passed ? "✅ Passed" : "❌ Failed"}`)
+          .setColor(0x0099ff)
+          .setTimestamp();
+
+        const dmRow = new ActionRowBuilder<ButtonBuilder>()
+          .addComponents(
+            new ButtonBuilder()
+              .setLabel('Review Dashboard')
+              .setURL(`${baseUrl}/admin`)
+              .setStyle(ButtonStyle.Link)
+          );
+
+        for (const admin of admins.values()) {
+          try {
+            await admin.send({ embeds: [dmEmbed], components: [dmRow] });
+          } catch (err) {
+            console.log(`Could not send DM to admin ${admin.user.tag}`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error sending admin DM notifications:", err);
+    }
+
+    // DM notification to admins
+    try {
       const guild = await client.guilds.fetch(CONFIG.GUILD_ID);
       const members = await guild.members.fetch();
       const admins = members.filter(m => m.permissions.has('Administrator') && !m.user.bot);
@@ -165,8 +199,9 @@ export async function handleSubmissionResult(userId: string, action: 'approve' |
             .setColor(status === 'approved' ? 0x00FF00 : 0xFF0000);
 
           // Keep only the "Website" link button if it exists
-          const components = notificationMsg.components[0]?.components as any[];
-          const websiteBtn = components?.find(c => (c as any).url && ((c as any).url.includes('replit.dev') || (c as any).url.includes('replit.app')));
+          const firstRow = notificationMsg.components[0] as any;
+          const components = firstRow?.components || [];
+          const websiteBtn = components.find((c: any) => c.url && (c.url.includes('replit.dev') || c.url.includes('replit.app')));
           const newComponents = websiteBtn ? [new ActionRowBuilder<ButtonBuilder>().addComponents(ButtonBuilder.from(websiteBtn as any))] : [];
 
           await notificationMsg.edit({ embeds: [newEmbed], components: newComponents });

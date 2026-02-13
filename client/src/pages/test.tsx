@@ -21,6 +21,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, CheckCircle2 } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const QUESTIONS = [
   {
@@ -129,6 +130,10 @@ export default function TestPage() {
   return (
     <Layout>
       <div className="max-w-2xl mx-auto pt-8 px-4 pb-20 w-full overflow-x-hidden">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-display font-bold">Staff Assessment</h1>
+          <ThemeToggle />
+        </div>
         <div className="mb-8 space-y-2">
           <div className="flex justify-between text-sm text-muted-foreground font-medium mb-2">
             <span>Question {currentQuestionIndex + 1} of {QUESTIONS.length}</span>

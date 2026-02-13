@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl, type CreateSubmissionRequest } from "@shared/routes";
+import { api, buildUrl } from "@shared/routes";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -60,9 +60,9 @@ export function useAdminAction() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ id, action }: { id: string; action: "approve" | "deny" }) => {
+    mutationFn: async ({ id, action, answers }: { id: string; action: "approve" | "deny"; answers?: Record<string, string> }) => {
       const url = buildUrl(api.admin.action.path, { id });
-      const res = await apiRequest("POST", url, { action });
+      const res = await apiRequest("POST", url, { action, answers });
       const data = await res.json();
       return api.admin.action.responses[200].parse(data);
     },

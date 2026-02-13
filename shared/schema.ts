@@ -11,6 +11,7 @@ export const users = pgTable("users", {
   discriminator: text("discriminator"),
   avatarUrl: text("avatar_url"),
   isAdmin: boolean("is_admin").default(false),
+  submissionCount: integer("submission_count").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -61,6 +62,7 @@ export type CreateSubmissionRequest = InsertSubmission;
 
 export type AdminActionRequest = {
   action: "approve" | "deny";
+  answers?: Record<string, string>;
 };
 
 // Response types

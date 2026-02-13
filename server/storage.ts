@@ -1,6 +1,6 @@
 import { users, submissions, type User, type InsertUser, type Submission, type InsertSubmission } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -43,6 +43,12 @@ export class DatabaseStorage implements IStorage {
   // Submissions
   async createSubmission(insertSubmission: InsertSubmission): Promise<Submission> {
     const [submission] = await db.insert(submissions).values(insertSubmission).returning();
+    
+    // Increment user submission count
+    await db.update(users)
+      .set({ submissionCount: sql`${users.submissionCount} + 1` })
+      .where(eq(users.id, insertSubmission.userId));
+      
     return submission;
   }
 

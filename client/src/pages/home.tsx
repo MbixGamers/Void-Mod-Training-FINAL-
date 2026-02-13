@@ -2,9 +2,11 @@ import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Users, UserPlus, Trophy, Gamepad, Monitor, Video, Scissors, PenTool, AlertTriangle, Bed, LogIn, LineChart, ShieldCheck } from "lucide-react";
+import { Users, UserPlus, Trophy, Gamepad, Monitor, Video, Scissors, PenTool, AlertTriangle, Bed, LogIn, LineChart, ShieldCheck, Zap } from "lucide-react";
 import { Layout } from "@/components/layout";
 import { motion } from "framer-motion";
+import { SiDiscord } from "react-icons/si";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Home() {
   const { user, isLoading } = useAuth();
@@ -22,6 +24,27 @@ export default function Home() {
   return (
     <Layout>
       <div className="flex flex-col space-y-12 max-w-6xl mx-auto px-4 pb-20">
+        
+        {/* Navigation / Header */}
+        <div className="flex justify-between items-center py-6">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+              <Zap className="text-white w-6 h-6 fill-current" />
+            </div>
+            <span className="text-xl font-display font-bold tracking-tight">VOID<span className="text-primary">.TRAINING</span></span>
+          </div>
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <Button 
+              variant="ghost" 
+              className="hidden md:flex font-medium text-muted-foreground hover:text-foreground hover:bg-white/5"
+              onClick={() => window.open('https://discord.gg/voidggs', '_blank')}
+            >
+              <SiDiscord className="mr-2 h-4 w-4" />
+              Support
+            </Button>
+          </div>
+        </div>
 
         {/* Header Title Section */}
         <div className="flex items-center gap-4 mb-8">
