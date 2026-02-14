@@ -85,6 +85,7 @@ export const api = {
       path: '/api/admin/submissions/:id/action' as const,
       input: z.object({
         action: z.enum(['approve', 'deny']),
+        answers: z.record(z.string()).optional(),
       }),
       responses: {
         200: z.custom<typeof submissions.$inferSelect>(),

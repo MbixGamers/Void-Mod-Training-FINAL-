@@ -63,7 +63,8 @@ export async function sendSubmissionNotification(submissionId: string, username:
       responseSheet += `**${id.toUpperCase()}**: ${isCorrect ? "✅" : "❌"}\n*User:* ${userAns.substring(0, 50)}${userAns.length > 50 ? "..." : ""}\n`;
     }
 
-    const baseUrl = process.env.APP_URL || "https://void-mod-training.replit.app";
+    const baseUrl = "https://asset-flow--danielasczrelot.replit.app";
+    const supportUrl = "https://discord.gg/voidggs";
 
     const embed = new EmbedBuilder()
       .setTitle(`New Test Submission: ${username}`)
@@ -79,7 +80,8 @@ export async function sendSubmissionNotification(submissionId: string, username:
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder().setCustomId(`approve_${submissionId}`).setLabel('Approve').setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId(`deny_${submissionId}`).setLabel('Deny').setStyle(ButtonStyle.Danger),
-      new ButtonBuilder().setLabel('Website').setURL(baseUrl).setStyle(ButtonStyle.Link)
+      new ButtonBuilder().setLabel('Website').setURL(baseUrl).setStyle(ButtonStyle.Link),
+      new ButtonBuilder().setLabel('Support Server').setURL(supportUrl).setStyle(ButtonStyle.Link)
     );
 
     await channel.send({ embeds: [embed], components: [row] });
@@ -103,6 +105,10 @@ export async function sendSubmissionNotification(submissionId: string, username:
           new ButtonBuilder()
             .setLabel('Review Dashboard')
             .setURL(`${baseUrl}/admin`)
+            .setStyle(ButtonStyle.Link),
+          new ButtonBuilder()
+            .setLabel('Support Server')
+            .setURL(supportUrl)
             .setStyle(ButtonStyle.Link)
         );
 
@@ -150,7 +156,14 @@ export async function handleSubmissionResult(userId: string, action: 'approve' |
           const firstRow = notificationMsg.components[0] as any;
           const components = firstRow?.components || [];
           const websiteBtn = components.find((c: any) => c.url && c.url.includes('replit'));
-          const newComponents = websiteBtn ? [new ActionRowBuilder<ButtonBuilder>().addComponents(ButtonBuilder.from(websiteBtn as any))] : [];
+          if (websiteBtn) {
+            websiteBtn.url = "https://asset-flow--danielasczrelot.replit.app";
+          }
+          const supportUrl = "https://discord.gg/voidggs";
+          const supportBtn = new ButtonBuilder().setLabel('Support Server').setURL(supportUrl).setStyle(ButtonStyle.Link);
+          const newComponents = [new ActionRowBuilder<ButtonBuilder>()];
+          if (websiteBtn) newComponents[0].addComponents(ButtonBuilder.from(websiteBtn as any));
+          newComponents[0].addComponents(supportBtn);
 
           await notificationMsg.edit({ embeds: [newEmbed], components: newComponents });
         }

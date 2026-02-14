@@ -33,7 +33,7 @@ export function useCreateSubmission() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (data: CreateSubmissionRequest) => {
+    mutationFn: async (data: any) => {
       const res = await apiRequest("POST", api.submissions.create.path, data);
       const json = await res.json();
       return api.submissions.create.responses[201].parse(json);
